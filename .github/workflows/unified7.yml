@@ -1,0 +1,39 @@
+name: Publish unified7 player pack
+on:
+  push:
+    branches: [unified7-build]
+permissions:
+  contents: write
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assemble and verify player assets
+        run: |
+          python - <<'PY'
+          import urllib.request,zipfile,hashlib,json,uuid
+          from pathlib import Path
+          urllib.request.urlretrieve('https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/unified6/Kirei-Unified.zip','baseline.zip')
+          assert hashlib.sha256(Path('baseline.zip').read_bytes()).hexdigest()=='ef73af55ee8b8f3d70ccb89386e3dfa3d3dc6cfefd7600d04590e29f6f93468a'
+          with zipfile.ZipFile('baseline.zip') as old,zipfile.ZipFile('Autumn-Cosmetics-Patch.zip') as patch,zipfile.ZipFile('Kirei-Unified.zip','w',zipfile.ZIP_DEFLATED) as out:
+              for n in old.namelist():out.writestr(n,patch.read(n) if n in patch.namelist() else old.read(n))
+              for n in patch.namelist():
+                  if n not in old.namelist():out.writestr(n,patch.read(n))
+          with zipfile.ZipFile('Kirei-Unified.zip') as z:
+              assert z.testzip() is None
+              h=hashlib.sha256()
+              for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
+              assert h.hexdigest()=='7a4e75a9171f44ffab93c36dfa11aede20c114c478152ec895f7c26f7d330eed'
+          b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/unified7/'+s)),contentSha256=h.hexdigest())))
+          PY
+      - name: Publish verified pack
+        run: |
+          gh release upload unified7 Kirei-Unified.zip
+          gh release edit unified7 --draft=false --title 'Kirei Unified 7 - Dragon, Vampire and Phoenix cosmetics' --notes 'Adds the open-jaw Nether Dragon helmet, Beecomb Sword, black and white Vampire crate, orange Phoenix mount and Magma Blade. Retains original Duviri assets.'
+        env:
+          GH_TOKEN: ${{ github.token }}
