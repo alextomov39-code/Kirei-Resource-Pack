@@ -1,0 +1,39 @@
+name: Publish unified8-merged player pack
+on:
+  push:
+    branches: [unified8-merged-build]
+permissions:
+  contents: write
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assemble and verify player assets
+        run: |
+          python - <<'PY'
+          import urllib.request,zipfile,hashlib,json,uuid
+          from pathlib import Path
+          urllib.request.urlretrieve('https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/profile-system4-packfix-20261024/Kirei-Profile-System4-Unified7-Pack.zip','baseline.zip')
+          assert hashlib.sha256(Path('baseline.zip').read_bytes()).hexdigest()=='e39d10275ff66a91f0cb229c72d4aadccb0e9978c06f45025a71d694e77734d2'
+          with zipfile.ZipFile('baseline.zip') as old,zipfile.ZipFile('Dragon-Atlas-Patch.zip') as patch,zipfile.ZipFile('Kirei-Unified.zip','w',zipfile.ZIP_DEFLATED) as out:
+              for n in old.namelist():out.writestr(n,patch.read(n) if n in patch.namelist() else old.read(n))
+              for n in patch.namelist():
+                  if n not in old.namelist():out.writestr(n,patch.read(n))
+          with zipfile.ZipFile('Kirei-Unified.zip') as z:
+              assert z.testzip() is None
+              h=hashlib.sha256()
+              for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
+              assert h.hexdigest()=='becae3676337a772fc8b46c354227234d2553861c1814169d3e2048cfad3c3b9'
+          b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/unified8-merged/'+s)),contentSha256=h.hexdigest())))
+          PY
+      - name: Publish verified pack
+        run: |
+          gh release upload unified8-merged Kirei-Unified.zip
+          gh release edit unified8-merged --draft=false --title 'Kirei Unified 8 - Dragon and crate texture repair' --notes 'Fixes item-atlas paths for Dragon and mystery crate textures, reduces the Dragon helmet, and preserves the complete current profile-system4 unified7 pack.'
+        env:
+          GH_TOKEN: ${{ github.token }}
