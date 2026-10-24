@@ -1,0 +1,38 @@
+name: Publish unified6 player pack
+on:
+  push:
+    branches: [unified6-build]
+permissions:
+  contents: write
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assemble and verify player assets
+        run: |
+          python - <<'PY'
+          import urllib.request,zipfile,hashlib,json,uuid
+          from pathlib import Path
+          urllib.request.urlretrieve('https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/unified5/Kirei-Unified.zip','baseline.zip')
+          assert hashlib.sha256(Path('baseline.zip').read_bytes()).hexdigest()=='65f4cc1379260b9072943890899348343e5147de74db85a929c387c8cb86bd15'
+          with zipfile.ZipFile('baseline.zip') as old,zipfile.ZipFile('Dragon-Selector-Patch.zip') as patch,zipfile.ZipFile('Kirei-Unified.zip','w',zipfile.ZIP_DEFLATED) as out:
+              assert set(patch.namelist())<=set(old.namelist())
+              for n in old.namelist():out.writestr(n,patch.read(n) if n in patch.namelist() else old.read(n))
+          with zipfile.ZipFile('Kirei-Unified.zip') as z:
+              assert z.testzip() is None
+              h=hashlib.sha256()
+              for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
+              assert h.hexdigest()=='64ec14c95573828c0bb43e2661f45ef0b05498ccfd3481b04c36db96d7ad2ba6'
+          b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/unified6/'+s)),contentSha256=h.hexdigest())))
+          PY
+      - name: Publish verified pack
+        run: |
+          gh release upload unified6 Kirei-Unified.zip
+          gh release edit unified6 --draft=false --title 'Kirei Unified 5 - Dragon selector portrait' --notes 'Updates the Roman class selector Dragon portrait to its current default skin. Preserves every other icon, frame, shoulder model and player asset.'
+        env:
+          GH_TOKEN: ${{ github.token }}
