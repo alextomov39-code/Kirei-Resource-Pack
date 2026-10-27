@@ -1,7 +1,7 @@
-name: Publish gorillaearth-atlasfix1-20261027 player pack
+name: Publish abilityaccents1-20261027 player pack
 on:
   push:
-    branches: [gorillaearth-atlasfix1-20261027-build]
+    branches: [abilityaccents1-20261027-build]
 permissions:
   contents: write
 jobs:
@@ -17,9 +17,9 @@ jobs:
           python - <<'PY'
           import urllib.request,zipfile,hashlib,json,uuid
           from pathlib import Path
-          urllib.request.urlretrieve('https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/mvp-gui3-20261026/Kirei-MVP-GUI3-Unified-Pack.zip','baseline.zip')
-          assert hashlib.sha256(Path('baseline.zip').read_bytes()).hexdigest()=='fd978a79e13169351a105b1dce2b2d21f855f2fbbf7bba33892f6d568466ec50'
-          with zipfile.ZipFile('baseline.zip') as old,zipfile.ZipFile('Title-Patch.zip') as patch,zipfile.ZipFile('Kirei-Unified.zip','w',zipfile.ZIP_DEFLATED) as out:
+          urllib.request.urlretrieve('https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/enderman-mimic1-20261027/Kirei-Unified.zip','baseline.zip')
+          assert hashlib.sha256(Path('baseline.zip').read_bytes()).hexdigest()=='b05f1bb616f5d75bb2a38a30326d423c0ab0f46c9c8e0c26bed5c881cf51cb0d'
+          with zipfile.ZipFile('baseline.zip') as old,zipfile.ZipFile('Accents-Patch.zip') as patch,zipfile.ZipFile('Kirei-Unified.zip','w',zipfile.ZIP_DEFLATED) as out:
               for n in old.namelist():out.writestr(n,patch.read(n) if n in patch.namelist() else old.read(n))
               for n in patch.namelist():
                   if n not in old.namelist():out.writestr(n,patch.read(n))
@@ -27,13 +27,13 @@ jobs:
               assert z.testzip() is None
               h=hashlib.sha256()
               for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
-              assert h.hexdigest()=='9ed7b0e990f10e585ed9f3aa269f0c604694fc7956ea72497b8736d9072d971b'
+              assert h.hexdigest()=='63887f0a681bc30436b1f21330b93ef8bfaaeade058aa9cb2d4254a20e25a9a7'
           b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
-          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/gorillaearth-atlasfix1-20261027/'+s)),contentSha256=h.hexdigest())))
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/abilityaccents1-20261027/'+s)),contentSha256=h.hexdigest())))
           PY
       - name: Publish verified pack
         run: |
-          gh release upload gorillaearth-atlasfix1-20261027 Kirei-Unified.zip
-          gh release edit gorillaearth-atlasfix1-20261027 --draft=false --title 'Kirei Gorilla texture atlas fix' --notes 'Gorilla Earth Wave, Earth Dust and requested earth sounds; preserves prior player assets.'
+          gh release upload abilityaccents1-20261027 Kirei-Unified.zip
+          gh release edit abilityaccents1-20261027 --draft=false --title 'Kirei ability accents' --notes 'Phoenix rebirth eruption and Gorilla landing rubble; preserves all previous assets.'
         env:
           GH_TOKEN: ${{ github.token }}
