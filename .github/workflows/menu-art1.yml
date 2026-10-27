@@ -1,7 +1,7 @@
-name: Publish vampire-demonking1-20261027 player pack
+name: Publish wardensoul-yetiice1-20261027 player pack
 on:
   push:
-    branches: [vampire-demonking1-20261027-build]
+    branches: [wardensoul-yetiice1-20261027-build]
 permissions:
   contents: write
 jobs:
@@ -27,13 +27,13 @@ jobs:
               assert z.testzip() is None
               h=hashlib.sha256()
               for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
-              assert h.hexdigest()=='37afa939bb827c0159ab2432fa52be5c0a25d55aa38733674f7fe6ba1d244cc2'
+              assert h.hexdigest()=='185f74e57d195b099d6e7afbcce070096925248b8c36ffc95a166d55a57a1392'
           b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
-          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/vampire-demonking1-20261027/'+s)),contentSha256=h.hexdigest())))
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/wardensoul-yetiice1-20261027/'+s)),contentSha256=h.hexdigest())))
           PY
       - name: Publish verified pack
         run: |
-          gh release upload vampire-demonking1-20261027 Kirei-Unified.zip
-          gh release edit vampire-demonking1-20261027 --draft=false --title 'Kirei Demon King Vampire crate and bow' --notes 'Demon King Vampire crate and four-stage bow visuals; preserves unlock behavior and all previous player assets.'
+          gh release upload wardensoul-yetiice1-20261027 Kirei-Unified.zip
+          gh release edit wardensoul-yetiice1-20261027 --draft=false --title 'Kirei Warden Soul wearables and Yeti ice crate' --notes 'Adds Soul Demonic horns and wings with tail plus animated Yeti ice crate; preserves previous player assets.'
         env:
           GH_TOKEN: ${{ github.token }}
