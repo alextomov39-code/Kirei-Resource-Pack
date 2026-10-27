@@ -1,7 +1,7 @@
-name: Publish menu-art1-20261026 player pack
+name: Publish menu-art2-20261026 player pack
 on:
   push:
-    branches: [menu-art1-20261026-build]
+    branches: [menu-art2-20261026-build]
 permissions:
   contents: write
 jobs:
@@ -27,13 +27,13 @@ jobs:
               assert z.testzip() is None
               h=hashlib.sha256()
               for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
-              assert h.hexdigest()=='76d590ec900008229e415ad5c03973259b14c2996b08ec3cde2eac1c17b4d80a'
+              assert h.hexdigest()=='72bf3e33509769c936f4df0cc30d2697cb7e1eb5e78e2b8ef5bea416b9abf69e'
           b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
-          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/menu-art1-20261026/'+s)),contentSha256=h.hexdigest())))
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/menu-art2-20261026/'+s)),contentSha256=h.hexdigest())))
           PY
       - name: Publish verified pack
         run: |
-          gh release upload menu-art1-20261026 Kirei-Unified.zip
-          gh release edit menu-art1-20261026 --draft=false --title 'Kirei Menu Art - Shop and Navigator' --notes 'Marble Shop heading, supplied Navigator icons on Cosmetics cards, and consistent carved Back buttons. Preserves the complete MVP GUI3 combined pack.'
+          gh release upload menu-art2-20261026 Kirei-Unified.zip
+          gh release edit menu-art2-20261026 --draft=false --title 'Kirei Menu Art - Shop and Navigator' --notes 'Marble Shop heading, supplied Navigator icons with original cards, and consistent carved Back buttons. Preserves the complete MVP GUI3 combined pack.'
         env:
           GH_TOKEN: ${{ github.token }}
