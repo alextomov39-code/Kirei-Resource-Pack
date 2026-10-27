@@ -1,7 +1,7 @@
-name: Publish vampiredemon-wingsfix1-20261027 player pack
+name: Publish enderman-mimic1-20261027 player pack
 on:
   push:
-    branches: [vampiredemon-wingsfix1-20261027-build]
+    branches: [enderman-mimic1-20261027-build]
 permissions:
   contents: write
 jobs:
@@ -27,13 +27,13 @@ jobs:
               assert z.testzip() is None
               h=hashlib.sha256()
               for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
-              assert h.hexdigest()=='abf169b4212b4e8d54c03073d97afc7202e3c7f3ded3cd1046765494634664b2'
+              assert h.hexdigest()=='6b21271bd4f517c0bb70fd81d6d70e61945466ea2e6bd962b5cef1e21dfb883e'
           b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
-          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/vampiredemon-wingsfix1-20261027/'+s)),contentSha256=h.hexdigest())))
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/enderman-mimic1-20261027/'+s)),contentSha256=h.hexdigest())))
           PY
       - name: Publish verified pack
         run: |
-          gh release upload vampiredemon-wingsfix1-20261027 Kirei-Unified.zip
-          gh release edit vampiredemon-wingsfix1-20261027 --draft=false --title 'Kirei Warden Soul wearables and Yeti ice crate' --notes 'Adds Soul Demonic horns and wings with tail plus animated Yeti ice crate; preserves previous player assets.'
+          gh release upload enderman-mimic1-20261027 Kirei-Unified.zip
+          gh release edit enderman-mimic1-20261027 --draft=false --title 'Kirei Enderman Mimic mystery box' --notes 'Adds the Beyond Mimic mystery box with idle and occasional attack animation; preserves previous cosmetics.'
         env:
           GH_TOKEN: ${{ github.token }}
