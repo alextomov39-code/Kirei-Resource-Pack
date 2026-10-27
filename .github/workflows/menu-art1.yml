@@ -1,7 +1,7 @@
-name: Publish welcometext1-20261027 player pack
+name: Publish dreadflame1-20261027 player pack
 on:
   push:
-    branches: [welcometext1-20261027-build]
+    branches: [dreadflame1-20261027-build]
 permissions:
   contents: write
 jobs:
@@ -27,13 +27,13 @@ jobs:
               assert z.testzip() is None
               h=hashlib.sha256()
               for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
-              assert h.hexdigest()=='e4a772535fd9eaa286da3c574ab630dce23a117d6e252cc871acfddd07ff010c'
+              assert h.hexdigest()=='dba09cc19c60084a8bb50725c9f85585ab585406deb993f51d8fcd54f538c2c2'
           b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
-          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/welcometext1-20261027/'+s)),contentSha256=h.hexdigest())))
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/dreadflame1-20261027/'+s)),contentSha256=h.hexdigest())))
           PY
       - name: Publish verified pack
         run: |
-          gh release upload welcometext1-20261027 Kirei-Unified.zip
-          gh release edit welcometext1-20261027 --draft=false --title 'Kirei welcome banner artwork' --notes 'Supplied Welcome to Kirei artwork on the existing animated lobby board; preserves previous combined assets.'
+          gh release upload dreadflame1-20261027 Kirei-Unified.zip
+          gh release edit dreadflame1-20261027 --draft=false --title 'Kirei Dreadlord flames and welcome banner fix' --notes 'Vengeful Flame projectile visuals and atlas-compatible welcome banner; preserves previous player assets.'
         env:
           GH_TOKEN: ${{ github.token }}
