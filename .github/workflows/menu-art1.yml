@@ -1,7 +1,7 @@
-name: Publish menu-titles1-20261026 player pack
+name: Publish class-titles1-20261026 player pack
 on:
   push:
-    branches: [menu-titles1-20261026-build]
+    branches: [class-titles1-20261026-build]
 permissions:
   contents: write
 jobs:
@@ -27,13 +27,13 @@ jobs:
               assert z.testzip() is None
               h=hashlib.sha256()
               for n in sorted(z.namelist()):h.update(n.encode()+b'\0'+hashlib.sha256(z.read(n)).digest())
-              assert h.hexdigest()=='b7fc1c505ac5ea5c1fdea0ad964210ba7e8280b6e10819617c9bde0ebda88b39'
+              assert h.hexdigest()=='0f4f5eae94f96dee3d4448dbc757ec25e070ca7ca5ca7a66fb0c885faa25883a'
           b=Path('Kirei-Unified.zip').read_bytes();s=hashlib.sha1(b).hexdigest()
-          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/menu-titles1-20261026/'+s)),contentSha256=h.hexdigest())))
+          print('PACK_RESULT '+json.dumps(dict(sha1=s,sha256=hashlib.sha256(b).hexdigest(),uuid=str(uuid.uuid5(uuid.NAMESPACE_URL,'kirei/class-titles1-20261026/'+s)),contentSha256=h.hexdigest())))
           PY
       - name: Publish verified pack
         run: |
-          gh release upload menu-titles1-20261026 Kirei-Unified.zip
-          gh release edit menu-titles1-20261026 --draft=false --title 'Kirei supplied menu titles' --notes 'Supplied Friends, Cosmetics, Shop and Navigator titles. Restores original Navigator icons; preserves shared Back controls and combined assets.'
+          gh release upload class-titles1-20261026 Kirei-Unified.zip
+          gh release edit class-titles1-20261026 --draft=false --title 'Kirei class selector titles' --notes 'Supplied Classes, Normal, Mythic and Ascended heading artwork; preserves all existing combined menu assets.'
         env:
           GH_TOKEN: ${{ github.token }}
