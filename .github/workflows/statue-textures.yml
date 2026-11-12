@@ -1,0 +1,30 @@
+name: Publish statue texture correction
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Correct public pack atlases
+        shell: python
+        run: |
+          import urllib.request,zipfile,json
+          for fmt in [75,97]:
+              base=f'https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/map-editor2-20261111/Kirei-MapEditor2-format-{fmt}.zip'
+              urllib.request.urlretrieve(base,'baseline.zip')
+              with zipfile.ZipFile('baseline.zip') as src,zipfile.ZipFile(f'Kirei-StatueTextures1-format-{fmt}.zip','w',zipfile.ZIP_DEFLATED) as dst:
+                  textures=[n.removeprefix('assets/').replace('/textures/',':').removesuffix('.png') for n in src.namelist() if n.startswith('assets/kireistatues/textures/') and n.endswith('.png')]
+                  assert len(textures)==6
+                  for n in src.namelist():
+                      data=src.read(n)
+                      if n in ['assets/minecraft/atlases/blocks.json','assets/minecraft/atlases/items.json']:
+                          d=json.loads(data)
+                          d['sources'] += [{'type':'minecraft:single','resource':t,'sprite':t} for t in textures]
+                          data=json.dumps(d,separators=(',',':')).encode()
+                      dst.writestr(n,data)
+      - name: Upload corrected public resource packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload statue-textures1-20261112 Kirei-StatueTextures1-format-75.zip Kirei-StatueTextures1-format-97.zip --repo alextomov39-code/Kirei-Resource-Pack --clobber
