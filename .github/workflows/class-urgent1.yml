@@ -1,0 +1,42 @@
+name: Publish class urgent pack
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge verified public overlay
+        shell: python
+        run: |
+          import urllib.request,zipfile,json,hashlib,uuid
+          root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
+          tag='class-urgent1-20261112'
+          urllib.request.urlretrieve(root+tag+'/class-urgent1-overlay.zip','overlay.zip')
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='a2f32831f82b769e1a856b3497b3967c199a3fbc62c8845d474d975150e21117'
+          with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
+          assert all(n.startswith('assets/kireinative/') for n in overlay)
+          manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
+          hashes={75:'fb57a885bd9819384b12cd8d0c2cd675f08d513784ac77c599b0deca4c74e5ee',97:'af2d2dc10752a02966a769b98e5669a775f6c96c74457d38da9d5272ae13a86b'}
+          for fmt in [75,97]:
+              urllib.request.urlretrieve(root+f'emerald-shop1-20261112/Kirei-EmeraldShop1-format-{fmt}.zip','baseline.zip')
+              assert hashlib.sha256(open('baseline.zip','rb').read()).hexdigest()==hashes[fmt]
+              name=f'Kirei-ClassUrgent1-format-{fmt}.zip'
+              with zipfile.ZipFile('baseline.zip') as src,zipfile.ZipFile(name,'w',zipfile.ZIP_DEFLATED) as dst:
+                  assert set(src.namelist()).intersection(overlay)=={'assets/kireinative/font/detail_tiles.json'}
+                  old=json.loads(src.read('assets/kireinative/font/detail_tiles.json'));new=json.loads(overlay['assets/kireinative/font/detail_tiles.json']);assert new['providers'][:len(old['providers'])]==old['providers']
+                  for n in src.namelist():
+                      if n not in overlay:dst.writestr(n,src.read(n))
+                  for n,v in overlay.items():dst.writestr(n,v)
+              with zipfile.ZipFile(name) as z,zipfile.ZipFile('baseline.zip') as prev:
+                  assert z.testzip() is None
+                  assert all(z.read(n)==prev.read(n) for n in prev.namelist() if n not in overlay)
+                  assert all(z.read(n)==v for n,v in overlay.items())
+              data=open(name,'rb').read();manifest['packs'][str(fmt)]={'url':root+tag+'/'+name,'sha1':hashlib.sha1(data).hexdigest(),'sha256':hashlib.sha256(data).hexdigest()}
+          manifest['validation']='Pinned baseline and overlay SHA256 verified; every prior entry byte-identical and every new entry matches approved overlay in both packs.'
+          open('pack.json','w').write(json.dumps(manifest,indent=2))
+      - name: Publish public packs and verification manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload class-urgent1-20261112 Kirei-ClassUrgent1-format-75.zip Kirei-ClassUrgent1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
