@@ -1,0 +1,40 @@
+name: Publish emerald shop pack
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge verified public overlay
+        shell: python
+        run: |
+          import urllib.request,zipfile,json,hashlib,uuid
+          root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
+          tag='emerald-shop1-20261112'
+          urllib.request.urlretrieve(root+tag+'/emerald-shop-overlay.zip','overlay.zip')
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='56800faa0027d6360773946d23ea8a31aa647365a87c7fdbc7320e2a88ccc294'
+          with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
+          assert all(n.startswith('assets/kireiemerald/') for n in overlay)
+          manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
+          hashes={75:'1d1de45512cb69e10e6efa5fd29c38c950faf8555fcb9e8a329d8d6ae6a8e690',97:'cfb19b544b4d84230545911b67f84b6f774fd96d4a23733b3d1a0ee81c9ffa57'}
+          for fmt in [75,97]:
+              urllib.request.urlretrieve(root+f'statue-textures1-20261112/Kirei-StatueTextures1-format-{fmt}.zip','baseline.zip')
+              assert hashlib.sha256(open('baseline.zip','rb').read()).hexdigest()==hashes[fmt]
+              name=f'Kirei-EmeraldShop1-format-{fmt}.zip'
+              with zipfile.ZipFile('baseline.zip') as src,zipfile.ZipFile(name,'w',zipfile.ZIP_DEFLATED) as dst:
+                  assert not set(src.namelist()).intersection(overlay)
+                  for n in src.namelist():dst.writestr(n,src.read(n))
+                  for n,v in overlay.items():dst.writestr(n,v)
+              with zipfile.ZipFile(name) as z,zipfile.ZipFile('baseline.zip') as prev:
+                  assert z.testzip() is None
+                  assert all(z.read(n)==prev.read(n) for n in prev.namelist())
+                  assert all(z.read(n)==v for n,v in overlay.items())
+              data=open(name,'rb').read();manifest['packs'][str(fmt)]={'url':root+tag+'/'+name,'sha1':hashlib.sha1(data).hexdigest(),'sha256':hashlib.sha256(data).hexdigest()}
+          manifest['validation']='Pinned baseline and overlay SHA256 verified; every prior entry byte-identical and every new entry matches approved overlay in both packs.'
+          open('pack.json','w').write(json.dumps(manifest,indent=2))
+      - name: Publish public packs and verification manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload emerald-shop1-20261112 Kirei-EmeraldShop1-format-75.zip Kirei-EmeraldShop1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
