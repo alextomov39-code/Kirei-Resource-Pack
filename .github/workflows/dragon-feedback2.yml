@@ -1,0 +1,43 @@
+name: Publish dragon feedback pack
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge verified public overlay
+        shell: python
+        run: |
+          import urllib.request,zipfile,json,hashlib,uuid
+          root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
+          tag='dragon-feedback2-20261113'
+          urllib.request.urlretrieve(root+tag+'/dragon-feedback2-overlay.zip','overlay.zip')
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='451e9993602d1461c55d58444621c6407b388ffcf5cbeed7bb3793e2a120983b'
+          with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
+          assert all(n.startswith('assets/kireiwalls/') for n in overlay)
+          manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
+          hashes={75:'e09afc2b4d70f36cd8cf8aa16c4c7b7e8a221d7fe2258a97020e0f961bdafcd3',97:'d68e0e40eeb2d66d969222d9a6c22e4cfca5d7354f01e07a960ef64527146873'}
+          for fmt in [75,97]:
+              urllib.request.urlretrieve(root+f'class-urgent1-20261112/Kirei-ClassUrgent1-format-{fmt}.zip','baseline.zip')
+              assert hashlib.sha256(open('baseline.zip','rb').read()).hexdigest()==hashes[fmt]
+              name=f'Kirei-DragonFeedback2-format-{fmt}.zip'
+              with zipfile.ZipFile('baseline.zip') as src,zipfile.ZipFile(name,'w',zipfile.ZIP_DEFLATED) as dst:
+                  assert len(set(src.namelist()).intersection(overlay))==144
+                  for n in set(src.namelist()).intersection(overlay):
+                      assert json.loads(overlay[n])['model']['on_false']==json.loads(src.read(n))['model']
+                  for n in src.namelist():
+                      if n not in overlay:dst.writestr(n,src.read(n))
+                  for n,v in overlay.items():dst.writestr(n,v)
+              with zipfile.ZipFile(name) as z,zipfile.ZipFile('baseline.zip') as prev:
+                  assert z.testzip() is None
+                  assert all(z.read(n)==prev.read(n) for n in prev.namelist() if n not in overlay)
+                  assert all(z.read(n)==v for n,v in overlay.items())
+              data=open(name,'rb').read();manifest['packs'][str(fmt)]={'url':root+tag+'/'+name,'sha1':hashlib.sha1(data).hexdigest(),'sha256':hashlib.sha256(data).hexdigest()}
+          manifest['validation']='Pinned baseline and overlay SHA256 verified; every prior entry byte-identical and every new entry matches approved overlay in both packs.'
+          open('pack.json','w').write(json.dumps(manifest,indent=2))
+      - name: Publish public packs and verification manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload dragon-feedback2-20261113 Kirei-DragonFeedback2-format-75.zip Kirei-DragonFeedback2-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
