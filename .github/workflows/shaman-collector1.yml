@@ -12,9 +12,9 @@ jobs:
         run: |
           import urllib.request,zipfile,json,hashlib,uuid
           root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
-          tag='shaman-collector1-20261115'
+          tag='shaman-collector1-20261115-r2'
           urllib.request.urlretrieve(root+tag+'/shaman-collector1-overlay.zip','overlay.zip')
-          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='b83d8e28048b1ec818ebd41d5cfe0abc3341308f705bf566f6a55ee9fd6fbb09'
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='7695e4982379db7c039ac3755544b8dbacde9411f941819e5e63e6207e6b8040'
           with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
           assert all(n.startswith(('assets/kireinative/','assets/kireiemotes/')) for n in overlay)
           manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
@@ -39,4 +39,4 @@ jobs:
       - name: Publish public packs and verification manifest
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload shaman-collector1-20261115 Kirei-ShamanCollector1-format-75.zip Kirei-ShamanCollector1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
+        run: gh release upload shaman-collector1-20261115-r2 Kirei-ShamanCollector1-format-75.zip Kirei-ShamanCollector1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
