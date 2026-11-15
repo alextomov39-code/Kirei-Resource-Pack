@@ -1,0 +1,42 @@
+name: Publish Chicken terrain fixes guide pack
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge verified public overlay
+        shell: python
+        run: |
+          import urllib.request,zipfile,json,hashlib,uuid
+          root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
+          tag='terrain-eggs1-20261115'
+          urllib.request.urlretrieve(root+tag+'/terrain-eggs1-overlay.zip','overlay.zip')
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='e6f7e06e075f4a6f569104773548f067ded92d3ed64d224efa1ba868ff90de4b'
+          with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
+          assert all(n.startswith('assets/kireinative/') for n in overlay)
+          manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
+          hashes={75:'83f854a887317c97ee3dc338ed8a618dee0537d29943907536699e030fed8edc',97:'807e9c854d1c7122d3cc31f04de8ef1a41bfb76497ac51a21f46b93591a4c9f4'}
+          for fmt in [75,97]:
+              urllib.request.urlretrieve(root+f'werewolf-opening1-20261114/Kirei-WerewolfOpening1-format-{fmt}.zip','baseline.zip')
+              assert hashlib.sha256(open('baseline.zip','rb').read()).hexdigest()==hashes[fmt]
+              name=f'Kirei-TerrainEggs1-format-{fmt}.zip'
+              with zipfile.ZipFile('baseline.zip') as src,zipfile.ZipFile(name,'w',zipfile.ZIP_DEFLATED) as dst:
+                  assert set(src.namelist()).intersection(overlay)=={'assets/kireinative/font/detail_tiles.json'}
+                  old=json.loads(src.read('assets/kireinative/font/detail_tiles.json'));new=json.loads(overlay['assets/kireinative/font/detail_tiles.json']);assert new['providers'][:len(old['providers'])]==old['providers']
+                  for n in src.namelist():
+                      if n not in overlay:dst.writestr(n,src.read(n))
+                  for n,v in overlay.items():dst.writestr(n,v)
+              with zipfile.ZipFile(name) as z,zipfile.ZipFile('baseline.zip') as prev:
+                  assert z.testzip() is None
+                  assert all(z.read(n)==prev.read(n) for n in prev.namelist() if n not in overlay)
+                  assert all(z.read(n)==v for n,v in overlay.items())
+              data=open(name,'rb').read();manifest['packs'][str(fmt)]={'url':root+tag+'/'+name,'sha1':hashlib.sha1(data).hexdigest(),'sha256':hashlib.sha256(data).hexdigest()}
+          manifest['validation']='Pinned baseline and overlay SHA256 verified; every prior entry byte-identical and every new entry matches approved overlay in both packs.'
+          open('pack.json','w').write(json.dumps(manifest,indent=2))
+      - name: Publish public packs and verification manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload terrain-eggs1-20261115 Kirei-TerrainEggs1-format-75.zip Kirei-TerrainEggs1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
