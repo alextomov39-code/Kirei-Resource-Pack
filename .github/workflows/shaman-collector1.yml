@@ -1,0 +1,42 @@
+name: Publish Shaman collector pack
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge verified public overlay
+        shell: python
+        run: |
+          import urllib.request,zipfile,json,hashlib,uuid
+          root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
+          tag='shaman-collector1-20261115'
+          urllib.request.urlretrieve(root+tag+'/shaman-collector1-overlay.zip','overlay.zip')
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='b83d8e28048b1ec818ebd41d5cfe0abc3341308f705bf566f6a55ee9fd6fbb09'
+          with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
+          assert all(n.startswith(('assets/kireinative/','assets/kireiemotes/')) for n in overlay)
+          manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
+          hashes={75:'679a04ef5703d28cc17fc83a3de6443ad42dc8f7922e9b5b9ceb56e02f3ee411',97:'a69796e4d85cb758635e28f3585ef9daa6ea6b99e4d945bd747d3fd72aab0029'}
+          for fmt in [75,97]:
+              urllib.request.urlretrieve(root+f'combat-batch15-20261115/Kirei-CombatBatch15-format-{fmt}.zip','baseline.zip')
+              assert hashlib.sha256(open('baseline.zip','rb').read()).hexdigest()==hashes[fmt]
+              name=f'Kirei-ShamanCollector1-format-{fmt}.zip'
+              with zipfile.ZipFile('baseline.zip') as src,zipfile.ZipFile(name,'w',zipfile.ZIP_DEFLATED) as dst:
+                  assert set(src.namelist()).intersection(overlay)=={'assets/kireinative/font/detail_tiles.json'}
+                  old=json.loads(src.read('assets/kireinative/font/detail_tiles.json'));new=json.loads(overlay['assets/kireinative/font/detail_tiles.json']);assert new['providers'][:len(old['providers'])]==old['providers']
+                  for n in src.namelist():
+                      if n not in overlay:dst.writestr(n,src.read(n))
+                  for n,v in overlay.items():dst.writestr(n,v)
+              with zipfile.ZipFile(name) as z,zipfile.ZipFile('baseline.zip') as prev:
+                  assert z.testzip() is None
+                  assert all(z.read(n)==prev.read(n) for n in prev.namelist() if n not in overlay)
+                  assert all(z.read(n)==v for n,v in overlay.items())
+              data=open(name,'rb').read();manifest['packs'][str(fmt)]={'url':root+tag+'/'+name,'sha1':hashlib.sha1(data).hexdigest(),'sha256':hashlib.sha256(data).hexdigest()}
+          manifest['validation']='Pinned baseline and overlay SHA256 verified; every prior entry byte-identical and every new entry matches approved overlay in both packs.'
+          open('pack.json','w').write(json.dumps(manifest,indent=2))
+      - name: Publish public packs and verification manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload shaman-collector1-20261115 Kirei-ShamanCollector1-format-75.zip Kirei-ShamanCollector1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
