@@ -12,11 +12,11 @@ jobs:
         run: |
           import urllib.request,zipfile,json,hashlib,uuid
           root='https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/'
-          tag='enchants-info1-20261116'
+          tag='enchants-info1-20261116-r2'
           urllib.request.urlretrieve(root+tag+'/enchants-info1-overlay.zip','overlay.zip')
-          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='96e4eff5608ab053b24730cec216380c3521e112ddd819e3c0675dc439fb2291'
+          assert hashlib.sha256(open('overlay.zip','rb').read()).hexdigest()=='461fa3fc937341e0412b098e8e706a898320137c4e761ccf66f2bc606e3957f8'
           with zipfile.ZipFile('overlay.zip') as z:overlay={n:z.read(n) for n in z.namelist()}
-          assert all(n.startswith(('assets/kireinative/','assets/kireiemotes/')) for n in overlay)
+          assert all(n.startswith(('assets/kireinative/','assets/kireiemotes/','assets/kireiemerald/')) for n in overlay)
           manifest={'release':tag,'pack_id':str(uuid.uuid5(uuid.NAMESPACE_URL,tag)),'packs':{},'changed_assets':sorted(overlay)}
           hashes={75:'307d56ff7409b9f70c3ce2ef5cd99b09ac5e635ebbcd469a79f633a3d5b7ec1d',97:'6f5be73c6e8b5e62a5a38a05fef7074d7cac43ba806048781f97a227e707fd82'}
           for fmt in [75,97]:
@@ -37,4 +37,4 @@ jobs:
       - name: Publish public packs and verification manifest
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload enchants-info1-20261116 Kirei-EnchantsInfo1-format-75.zip Kirei-EnchantsInfo1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
+        run: gh release upload enchants-info1-20261116-r2 Kirei-EnchantsInfo1-format-75.zip Kirei-EnchantsInfo1-format-97.zip pack.json --repo alextomov39-code/Kirei-Resource-Pack
