@@ -1,0 +1,25 @@
+name: Build shared single-load packs
+on:
+  push:
+    branches: [single-load-20261121]
+permissions:
+  contents: write
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        format: [34,42,46,55,63,64,69,75,88,97]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            single-load.py
+            pack-inputs.json
+          sparse-checkout-cone-mode: false
+      - run: python -m pip install pillow
+      - run: python single-load.py ${{ matrix.format }}
+      - run: gh release upload single-load-20261121 Kirei-SingleLoad-format-*.zip hash-*.txt --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
