@@ -1,0 +1,21 @@
+name: Publish 26.3 native shader fix
+on:
+  push:
+    branches: [lunar263-native-shaders]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: lunar263.py
+          sparse-checkout-cone-mode: false
+      - run: curl -fsSL --retry 3 -o base.zip https://github.com/alextomov39-code/Kirei-Resource-Pack/releases/download/single-load-20261121/Kirei-SingleLoad-format-88.zip
+      - run: python lunar263.py base.zip Kirei-Lunar263-format-97.zip
+      - run: |
+          echo '809f47640ab9c32cc1b0b73495f84148c0ceece4  Kirei-Lunar263-format-97.zip' | sha1sum -c
+          gh release upload lunar263-native-shaders Kirei-Lunar263-format-97.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
