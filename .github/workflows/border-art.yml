@@ -1,0 +1,13 @@
+name: Bake connected border art
+on: push
+permissions:
+  contents: write
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m pip install pillow numpy
+      - run: python border-art.py
+        env:
+          GH_TOKEN: ${{ github.token }}
