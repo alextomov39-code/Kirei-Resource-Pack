@@ -14,7 +14,7 @@ root=Path.cwd() if os.environ.get('GITHUB_ACTIONS') else Path(__file__).resolve(
 out=root/'work/honeycomb'
 out.mkdir(exist_ok=True,parents=True)
 repo='alextomov39-code/Kirei-Resource-Pack'
-tag='dm-honeycomb-v2'
+tag='dm-honeycomb-v3'
 filename='KireiLegacyClientModels-1.0.0-paper26.3-227.jar'
 
 def digest(p,algo):
@@ -39,9 +39,12 @@ def paint():
             u=c-a;v=e-b
             t=np.clip(((dx-a)*u+(dy-b)*v)/(u*u+v*v),0,1)
             d=np.minimum(d,np.hypot(dx-a-u*t,dy-b-v*t))
+    # Hard stroke with a separate, low-opacity halo. Only pixel coverage
+    # softens the stroke itself when the high-resolution tile is downsampled.
     ink=d < .052
-    img=np.stack([np.where(ink,bright,base) for base,bright in
-                  [(155,255),(12,50),(30,55),(30,195)]],axis=-1).astype('uint8')
+    halo=np.clip(1-(d-.052)/.10,0,1)**2
+    img=np.stack([np.where(ink,bright,base+lift*halo) for base,lift,bright in
+                  [(155,75,255),(12,18,55),(30,14,58),(30,48,203)]],axis=-1).astype('uint8')
     p=out/'honeycomb.png'
     Image.fromarray(img).resize((256,256),Image.Resampling.BOX).save(p)
     return {'assets/kireiwalls/textures/font/dm_honeycomb.png':p.read_bytes(),
