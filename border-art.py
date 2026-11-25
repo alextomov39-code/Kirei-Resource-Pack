@@ -14,23 +14,23 @@ root=Path.cwd() if os.environ.get('GITHUB_ACTIONS') else Path(__file__).resolve(
 out=root/'work/honeycomb'
 out.mkdir(exist_ok=True,parents=True)
 repo='alextomov39-code/Kirei-Resource-Pack'
-tag='dm-honeycomb-v1'
+tag='dm-honeycomb-v2'
 filename='KireiLegacyClientModels-1.0.0-paper26.3-227.jar'
 
 def digest(p,algo):
     with p.open('rb') as f:return hashlib.file_digest(f,algo).hexdigest()
 
-# Distances are in world blocks. The repeat contains 6 columns and 14 staggered pairs.
+# One section-wide, section-high repeat in world units. Supersample a hard stroke once.
 def paint():
     n=1024
     w=16/6
-    pitch=32/14
+    pitch=16/4
     radius=pitch/3
     y,x=np.mgrid[:n,:n]
     x=(x+.5)*16/n
-    y=(y+.5)*32/n
+    y=(y+.5)*16/n
     d=np.full_like(x,99.)
-    for row in range(-1,30):
+    for row in range(-1,10):
         cy=row*pitch/2
         dx=(x-(row%2)*w/2+w/2)%w-w/2
         dy=y-cy
@@ -39,11 +39,11 @@ def paint():
             u=c-a;v=e-b
             t=np.clip(((dx-a)*u+(dy-b)*v)/(u*u+v*v),0,1)
             d=np.minimum(d,np.hypot(dx-a-u*t,dy-b-v*t))
-    core=np.exp(-(d/.085)**2)
-    glow=np.exp(-(d/.19)**2)
-    img=np.stack((160+92*glow,14+58*core,37+34*core,34+68*glow+86*core),axis=-1).astype('uint8')
+    ink=d < .052
+    img=np.stack([np.where(ink,bright,base) for base,bright in
+                  [(155,255),(12,50),(30,55),(30,195)]],axis=-1).astype('uint8')
     p=out/'honeycomb.png'
-    Image.fromarray(img).resize((256,256),Image.Resampling.LANCZOS).save(p)
+    Image.fromarray(img).resize((256,256),Image.Resampling.BOX).save(p)
     return {'assets/kireiwalls/textures/font/dm_honeycomb.png':p.read_bytes(),
             'assets/kireiwalls/font/dm_honeycomb.json':json.dumps({'providers':[{'type':'bitmap','file':'kireiwalls:font/dm_honeycomb.png','ascent':7,'height':64,'chars':['\ue000']}]}).encode()}
 
